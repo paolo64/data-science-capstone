@@ -1,0 +1,11 @@
+---
+title: "Get Data"
+author: "Paolo Ruscitti"
+date: "10 Oct 2015"
+output: html_document
+---
+
+This is an R Markdown document.
+```{r}
+setwd("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/")
+```
