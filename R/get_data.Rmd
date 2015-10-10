@@ -6,6 +6,33 @@ output: html_document
 ---
 
 This is an R Markdown document.
-```{r}
+```{r echo=FALSE}
 setwd("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/")
+library(jsonlite)
+read_json_file <- function(json_file){
+  dat <- fromJSON(sprintf("[%s]", paste(readLines(json_file), collapse=",")))
+}
+
+# all files to be analized
+all_files <- c("yelp_academic_dataset_business.json", "yelp_academic_dataset_checkin.json","yelp_academic_dataset_review.json", "yelp_academic_dataset_tip.json", "yelp_academic_dataset_user.json")
+
+#all_files <- c("yelp_academic_dataset_business.json")
+
+#get data
+start.time <- Sys.time()
+for (i in 1:length(all_files)) {
+  json_file <- all_files[i]
+  print("------------------------------------------------------------------")
+  print (paste("Current file:",json_file, sep=""))
+  df <- read_json_file("yelp_academic_dataset_tip.json")
+  print("STRUCTURE:")
+  print(head(df,3))
+  print(dim(df))
+  print(names(df))
+  print(str(df))
+}
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
 ```
