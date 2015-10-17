@@ -24,9 +24,9 @@ for (i in 1:length(all_files)) {
   json_file <- all_files[i]
   print("------------------------------------------------------------------")
   print (paste("Current file:",json_file, sep=""))
-  df <- read_json_file("yelp_academic_dataset_tip.json")
+  df <- read_json_file(json_file)
   print("STRUCTURE:")
-  print(head(df,3))
+  #print(head(df,3))
   print(dim(df))
   print(names(df))
   print(str(df))
@@ -35,4 +35,7 @@ for (i in 1:length(all_files)) {
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+# orderc count
+#x <- count(dat,"city")
+#x[order(x$freq, decreasing=TRUE),]
 ```
