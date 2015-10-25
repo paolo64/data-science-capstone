@@ -3,8 +3,10 @@
 .RData
 test.R
 .httr-oauth*
+.DS_Store
 googlesheets.Rproj
 jenny-scratch/*
+docs/
 yelp_dataset_challenge_academic_dataset/*
 googlesheets_token.rds
 *.html
