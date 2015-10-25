@@ -9,6 +9,7 @@ This is an R Markdown document.
 ```{r echo=FALSE}
 setwd("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/")
 library(jsonlite)
+library(plyr)
 read_json_file <- function(json_file){
   dat <- fromJSON(sprintf("[%s]", paste(readLines(json_file), collapse=",")))
 }
@@ -20,21 +21,89 @@ all_files <- c("yelp_academic_dataset_business.json", "yelp_academic_dataset_che
 
 #get data
 start.time <- Sys.time()
-for (i in 1:length(all_files)) {
-  json_file <- all_files[i]
-  print("------------------------------------------------------------------")
-  print (paste("Current file:",json_file, sep=""))
-  df <- read_json_file(json_file)
-  print("STRUCTURE:")
-  #print(head(df,3))
-  print(dim(df))
-  print(names(df))
-  print(str(df))
-}
-
+# for (i in 1:length(all_files)) {
+  # json_file <- all_files[i]
+#   print("------------------------------------------------------------------")
+#   print (paste("Current file:",json_file, sep=""))
+#   df <- read_json_file(json_file)
+#   print("STRUCTURE:")
+#   #print(head(df,3))
+#   print(dim(df))
+#   print(names(df))
+#   print(str(df))
+# }
+start.time <- Sys.time()
+print("------------------------------------------------------------------")
+json_file = "yelp_academic_dataset_business.json"
+print (paste("Current file:",json_file, sep=""))
+b <- read_json_file(json_file)
+dim(b)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+
+
+start.time <- Sys.time()
+print("------------------------------------------------------------------")
+json_file <- "yelp_academic_dataset_review.json"
+print (paste("Current file:",json_file, sep=""))
+r <- read_json_file(json_file)
+dim(r)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+start.time <- Sys.time()
+print("------------------------------------------------------------------")
+json_file <- "yelp_academic_dataset_user.json"
+print (paste("Current file:",json_file, sep=""))
+u <- read_json_file(json_file)
+dim(u)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+# start.time <- Sys.time()
+# print("------------------------------------------------------------------")
+# json_file <- "yelp_academic_dataset_tip.json"
+# print (paste("Current file:",json_file, sep=""))
+# t <- read_json_file(json_file)
+# end.time <- Sys.time()
+# time.taken <- end.time - start.time
+# time.taken
+
+
+# get just restaurants
+bres <- b[grep("Restaurants",b$categories),]
+
+# choose the city with more retaurants
+# count business per city and sort
+count_city <- count(bres, vars=c("city"))
+sort_city <- count_city[order(count_city$freq, decreasing = TRUE),]
+head(sort_city)
+
+#          city freq
+#     Las Vegas 4119
+
+# filter on Las Vegas Nevada restaurants
+restLV <- bres[bres$state=="NV" & bres$city=="Las Vegas", c("business_id", "name", "review_count", "stars")]
+# Write CSV
+write.csv(restLV, file = "restLV.csv")
+
+# get revisions for Las Vegas restaurants
+revLV <- r[r$business_id %in% restLV$business_id,]
+dim(revLV)
+revLVJson <- toJSON(revLV, pretty=TRUE)
+write(revLVJson, "revLV.json")
+
+# user
+usrLV <- u[u$user_id %in% revLV$user_id,]
+dim(usrLV)
+usrLVJson <- toJSON(usrLV, pretty=TRUE)
+write(usrLVJson, "usrLV.json")
+
+# dim(rev)
+# 370194      8
 # orderc count
 #x <- count(dat,"city")
 #x[order(x$freq, decreasing=TRUE),]

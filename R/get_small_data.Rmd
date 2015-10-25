@@ -1,0 +1,49 @@
+---
+title: "Get Data"
+author: "Paolo Ruscitti"
+date: "25 Oct 2015"
+output: html_document
+---
+
+This is an R Markdown document.
+```{r echo=FALSE}
+setwd("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/")
+library(jsonlite)
+library(plyr)
+read_json_file <- function(json_file){
+  dat <- fromJSON(sprintf("[%s]", paste(readLines(json_file), collapse=",")))
+}
+
+
+#get data
+start.time <- Sys.time()
+start.time <- Sys.time()
+print("------------------------------------------------------------------")
+json_file = "revLV.json"
+print (paste("Current file:",json_file, sep=""))
+rev <- fromJSON(json_file)
+dim(rev)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+
+start.time <- Sys.time()
+print("------------------------------------------------------------------")
+json_file <- "usrLV.json"
+print (paste("Current file:",json_file, sep=""))
+usr <- fromJSON(json_file)
+dim(usr)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+# read restaurants LV
+start.time <- Sys.time()
+print("------------------------------------------------------------------")
+rest <- read.csv("restLV.csv")
+dim(rest)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
