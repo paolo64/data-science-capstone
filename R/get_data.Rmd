@@ -107,4 +107,6 @@ write(usrLVJson, "usrLV.json")
 # orderc count
 #x <- count(dat,"city")
 #x[order(x$freq, decreasing=TRUE),]
+
+
 ```

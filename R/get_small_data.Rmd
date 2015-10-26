@@ -46,4 +46,34 @@ dim(rest)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+
+
+
+
+pair_usr_rev<- function(usr, rev){
+  len_user <- dim(usr)[1]
+  retlist <- list()
+  for (u in 1:len_user) {
+    curr_usr <- usr[u,]
+    
+    #print(curr_usr)
+    revs4user <- rev[rev$user_id==curr_usr$user_id,]$review_id
+    len_revs4user <- length(revs4user)
+    print(len_revs4user)
+    if ( len_revs4user > 1){
+      comb <- combn(revs4user, 2)
+      df <- data.frame(t(comb))
+      df$user_id <- curr_usr$user_id
+      df$X1S <- sapply(df$X1, function(x) rev[rev$review_id==x,]$stars)
+      df$X2S <- sapply(df$X2, function(x) rev[rev$review_id==x,]$stars)
+      df$delta <- df$X2S-df$X1S
+    } else{
+      comb <-  matrix(c(revs4user,0,0,0))
+      df <- data.frame(t(comb))
+      df$user_id <- curr_usr$user_id
+    }
+    retlist[[u]] <- df
+  }
+  return(retlist)
+}
 ```
