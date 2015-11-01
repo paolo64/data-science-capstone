@@ -5,6 +5,7 @@ from datetime import datetime
 
 from pprint import pprint as pp
 import time
+from staticScoreUser import StaticScoreUser
 
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -14,8 +15,7 @@ logger = logging.getLogger("capostone")
 DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/'
 
 INFILE_USR = 'usersLV.json'
-OUTFILE_USR = 'TMPusersLV.json'
-YEAR_DATASET = 2015
+OUTFILE_USR = 'usersLV_score.json'
 
 
 class RankUsers:
@@ -35,16 +35,27 @@ class RankUsers:
         end = time.time()
         logger.info("loaded user file '%s' [time:%2.2f secs]"%(inFile,end-start))    
 
-    def calcStaticRank(self):
-        #for u in self.data[:3]:
-        count = 0
+    def saveJson(self, outJsonFile,data_out):
+        outFile = os.path.join(self.data_dir,outJsonFile)
+        fo = open(outFile, 'w')
+        json.dump(data_out,fo,indent=3)
+        fo.close()
+        logger.info("out file:%s"%outFile)
 
-        for u in self.data[:3:
-            ssu = staticScoreUser(u)
-            retScore = ssu.score()
+    def calcStaticRank(self):
+        count = 0
+        ret = list()
+        for u in self.data:
+            ssu = StaticScoreUser(u)
+            score_dict = ssu.score()
+            if not score_dict:
+                print "ERRORE"
+            else:
+                u['score'] = score_dict['score']
+                ret.append(u)
+
+        return ret     
         
-        lenData = len(self.data)
-        print "tot:%s, count:%d, perc:%2.2f"%(lenData, count, 100.0*float(count)/float(lenData))
     def main(self):
         logger.info("Start")
         start = time.clock()
@@ -52,7 +63,10 @@ class RankUsers:
         self.loadJson()
 
         # calc static rank per user
-        self.calcStaticRank()
+        data_out = self.calcStaticRank()
+
+        # save json
+        self.saveJson(OUTFILE_USR, data_out)
         
         elapsed = (time.clock() - start)
         
