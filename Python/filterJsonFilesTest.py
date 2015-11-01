@@ -14,22 +14,16 @@ logger = logging.getLogger("capostone")
 
 DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/'
 
-"""INFILES = {
-    'business':'yelp_academic_dataset_business.json',
-    'reviews':'yelp_academic_dataset_review.json',
-    'uesr':'yelp_academic_dataset_user.json'}"""
-
-INFILES = {
-    'business':'yelp_academic_dataset_business.json',
-    }
-OUTFILE = ''
+OUTFILE_REST = 'restaurantsLV.csv'
+OUTFILE_REV = 'reviewsLV.json'
+OUTFILE_USR = 'usersLV.json'
 
 BUSINESS_FILTER = {'categories':set(["Restaurants"])}
 
 
 class FilterJsonFiles:
 
-    def __init__(self,data_dir=DATA_DIR, infiles=INFILES):
+    def __init__(self,data_dir=DATA_DIR, infiles=None):
         self.data_dir = data_dir
         self.infiles = infiles
         self.data = dict()
@@ -80,7 +74,21 @@ class FilterJsonFiles:
         for x in inList:
             if x['state'] == 'NV' and x['city'] == "Las Vegas":
                 ret.append(x)
-        return ret            
+        return ret 
+
+    def saveJson(self, outJsonFile, data):
+        outFile = os.path.join(self.data_dir,outJsonFile)
+        fo = open(outFile, 'w')
+        json.dump(data,fo,indent=3)
+        fo.close()
+
+    def saveCsv(self, outCsvFile, data):
+        outFile = os.path.join(self.data_dir,outCsvFile)
+        fo = open(outFile, 'w')
+        fo.write('"business_id","name","review_count","stars"\n')
+        for x in data:
+            fo.write('"%s","%s",%d,%s\n'%(x['business_id'].encode('utf-8'),x['name'].encode('utf-8'),x['review_count'],x['stars']))
+        fo.close()           
 
     @staticmethod
     def dim(inList):
@@ -100,6 +108,7 @@ class FilterJsonFiles:
         business = self.filterLV_Nevada(businessTmp)
         end = time.time()
         logger.info("business: %d x %d"%(self.dim(business)))
+        logger.info("[time:%s]"%(end-start))
 
 
         # review
@@ -112,6 +121,7 @@ class FilterJsonFiles:
         review = self.loadJsonFilterSet(inJsonFile,review_filter)
         end = time.time()
         logger.info("review: %d x %d"%(self.dim(review)))
+        logger.info("[time:%s]"%(end-start))
 
 
          # user
@@ -124,7 +134,19 @@ class FilterJsonFiles:
         user = self.loadJsonFilterSet(inJsonFile,user_filter)
         end = time.time()
         logger.info("user: %d x %d"%(self.dim(user)))
+        logger.info("[time:%s]"%(end-start))
 
+        # save business csv file
+        self.saveCsv(OUTFILE_REST, business)
+        logger.info("saved restaurants file %s"%(OUTFILE_REST))
+
+        # save reviewrs
+        self.saveJson(OUTFILE_REV, review)
+        logger.info("saved reviews file %s"%(OUTFILE_REV))
+
+        # save users
+        self.saveJson(OUTFILE_USR, user)
+        logger.info("saved user file %s"%(OUTFILE_USR))
 
         logger.info("Loaded file:'%s' in %d secs"%(curr_file, int((end-start))))
     
