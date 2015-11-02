@@ -1,0 +1,29 @@
+---
+title: "Get Data"
+author: "Paolo Ruscitti"
+date: "02 November 2015"
+output: html_document
+---
+
+This is an R Markdown document.
+```{r echo=FALSE}
+setwd("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/")
+library(jsonlite)
+#library(plyr)
+read_json_file <- function(json_file){
+  dat <- fromJSON(sprintf("[%s]", paste(readLines(json_file), collapse=",")))
+}
+
+
+#get data
+start.time <- Sys.time()
+json_file = "usersLV_score.json"
+print (paste("Current file:",json_file, sep=""))
+#b <- read_json_file(json_file)
+b <- fromJSON("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/usersLV_score.json")
+dim(b)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+```
+
