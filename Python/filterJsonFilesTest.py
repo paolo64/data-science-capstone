@@ -16,6 +16,7 @@ DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset
 
 OUTFILE_REST = 'restaurantsLV.csv'
 OUTFILE_REV = 'reviewsLV.json'
+OUTFILE_OBJ_REV = 'reviews_objLV.json'
 OUTFILE_USR = 'usersLV.json'
 
 BUSINESS_FILTER = {'categories':set(["Restaurants"])}
@@ -82,6 +83,13 @@ class FilterJsonFiles:
         json.dump(data,fo,indent=3)
         fo.close()
 
+    def saveObjJson(self, outJsonFile, data):
+        outFile = os.path.join(self.data_dir,outJsonFile)
+        fo = open(outFile, 'w')
+        for x in data:
+            fo.write("%s\n"%json.dumps(x))
+        fo.close()    
+
     def saveCsv(self, outCsvFile, data):
         outFile = os.path.join(self.data_dir,outCsvFile)
         fo = open(outFile, 'w')
@@ -143,6 +151,8 @@ class FilterJsonFiles:
         # save reviewrs
         self.saveJson(OUTFILE_REV, review)
         logger.info("saved reviews file %s"%(OUTFILE_REV))
+        self.saveObjJson(OUTFILE_OBJ_REV, review)
+        logger.info("saved reviews obj file %s"%(OUTFILE_OBJ_REV))
 
         # save users
         self.saveJson(OUTFILE_USR, user)
