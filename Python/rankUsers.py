@@ -37,13 +37,14 @@ class RankUsers:
         end = time.time()
         logger.info("loaded user file '%s' [time:%2.2f secs]"%(inFile,end-start))    
 
-    def saveJson(self, outJsonFile,data_out):
+    def saveJson(self, outJsonFile, data):
         outFile = os.path.join(self.data_dir,outJsonFile)
         fo = open(outFile, 'w')
-        json.dump(data_out,fo,indent=3)
+        for x in data:
+            fo.write("%s\n"%json.dumps(x))
         fo.close()
         logger.info("out file:%s"%outFile)
-
+    
     def calcStaticRank(self):
         count = 0
         ret = list()
@@ -72,8 +73,10 @@ class RankUsers:
         # enrich final data
         ret = list()
         for i,x in enumerate(data_in):
-            x['scores_scaled'] = scores_scaled[i]
-            x['scores_minmax'] = scores_minmax[i]
+            x['scores'] = dict()
+            x['scores']['score'] = scores[i]
+            x['scores']['scaled'] = scores_scaled[i]
+            x['scores']['minmax'] = scores_minmax[i]
             ret.append(x)
 
         logger.info("end normalization")        
