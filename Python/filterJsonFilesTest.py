@@ -90,22 +90,31 @@ class FilterJsonFiles:
             fo.write("%s\n"%json.dumps(x))
         fo.close()    
 
-    def saveCsv(self, outCsvFile, data):
+    def saveBusinessCsv(self, outCsvFile, data):
         outFile = os.path.join(self.data_dir,outCsvFile)
         fo = open(outFile, 'w')
-        fo.write('"business_id","name","review_count","stars"\n')
-        for x in data:
-            fo.write('"%s","%s",%d,%s\n'%(x['business_id'].encode('utf-8'),x['name'].encode('utf-8'),x['review_count'],x['stars']))
+        fo.write('"business_id","name","review_count","stars","pos","wstarsx1k"\n')
+        for pos,x in enumerate(data):
+            fo.write('"%s","%s",%d,%2.2f,%d,%2.2f\n'%(x['business_id'].encode('utf-8'),x['name'].encode('utf-8'),x['review_count'],x['stars'],pos,x['wstarsx1k']))
         fo.close()           
 
     @staticmethod
     def dim(inList):
         return len(inList), len(inList[0].keys())
 
-    def loadAllJson(self):   
+    @staticmethod
+    def enrichBusiness(inList):
+        sum_review_count = float(sum([ x['review_count'] for x in inList]))
 
-        count = 0
-        
+        ret = list()
+        for x in inList:
+            y = dict(x)
+            y['wstarsx1k']=1000.0 * float(x['stars'])*float(x['review_count'])/sum_review_count
+            ret.append(y)
+        return ret   
+    
+    def loadAllJson(self):   
+        count = 0      
         # load business
         curr_file = 'yelp_academic_dataset_business.json'
         logger.info("Loading file:'%s'"%curr_file)
@@ -113,7 +122,9 @@ class FilterJsonFiles:
         inJsonFile = os.path.join(self.data_dir,curr_file)
         logger.info("Jsonfile:'%s'"%inJsonFile)
         businessTmp = self.loadJsonFilter(inJsonFile,BUSINESS_FILTER)
-        business = self.filterLV_Nevada(businessTmp)
+        businessTmp2 = self.filterLV_Nevada(businessTmp)
+        business = self.enrichBusiness(businessTmp2)
+        sorted_business = sorted(business, key = lambda x:(x['stars'],x['review_count']), reverse=True)
         end = time.time()
         logger.info("business: %d x %d"%(self.dim(business)))
         logger.info("[time:%s]"%(end-start))
@@ -145,7 +156,7 @@ class FilterJsonFiles:
         logger.info("[time:%s]"%(end-start))
 
         # save business csv file
-        self.saveCsv(OUTFILE_REST, business)
+        self.saveBusinessCsv(OUTFILE_REST, sorted_business)
         logger.info("saved restaurants file %s"%(OUTFILE_REST))
 
         # save reviewrs
