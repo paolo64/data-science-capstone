@@ -126,9 +126,9 @@ class RankBusiness:
                     self.errors += 1
 
         # user score
-        w = float(w) * pair['user_score_minmax']/10.0
-        return (n1,n2,float(w))
-          
+        w = float(w) * pair['user_score_minmax']
+        #return (n1,n2,float(w))
+        return (n2,n1,float(w)) 
 
     def enrichResult(self,inList):
         ret = list()
