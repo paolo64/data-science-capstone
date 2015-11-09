@@ -79,8 +79,14 @@ class RankBusiness:
         logger.info("saved outfile:%s"%outFile)
 
     def getVotes(self, rev):
-        return rev['cool']+rev['funny']+rev['useful']    
-   
+        return rev['cool']+rev['funny']+rev['useful']
+
+    def calcWeight(self, x):
+        if x > 3:
+            return (x**2 - x - 1)
+        else:
+            return x
+
     def algo(self,pair):
         rev1 = pair['rev1']
         rev2 = pair['rev2']
@@ -89,20 +95,20 @@ class RankBusiness:
 
         diff_stars = rev1['y'] - rev2['y']
         if  diff_stars > 0:
-            n1 = rev1['business_id']
-            n2 = rev2['business_id']
+            n1 = rev2['business_id']
+            n2 = rev1['business_id']
             w = diff_stars * STAR_DIFF_W
         elif diff_stars < 0:
-            n1 = rev2['business_id']
+            n1 = rev1['business_id']
             n2 = rev2['business_id']
             w = -diff_stars*STAR_DIFF_W
             ret = (rev2['business_id'], rev1['business_id'], -diff_stars)
         elif diff_stars == 0:
             # use sentiment
             diff_sentiment = rev1['y_pred_proba'] - rev2['y_pred_proba']
-            if  diff_sentiment > 0:
-                n1 = rev1['business_id']
-                n2 = rev2['business_id']
+            if  diff_sentiment > 0:          
+                n1 = rev2['business_id']
+                n2 = rev1['business_id']
                 w = 1
             elif diff_sentiment < 0:
                 n1 = rev1['business_id']
@@ -111,12 +117,12 @@ class RankBusiness:
             elif  diff_sentiment == 0:
                 diff_votes = self.getVotes(rev1) - self.getVotes(rev1)
                 if  diff_votes > 0:
-                    n1 = rev1['business_id']
-                    n2 = rev2['business_id']
+                    n1 = rev2['business_id']
+                    n2 = rev1['business_id']     
                     w = 1
                 elif  diff_votes < 0:
+                    n1 = rev1['business_id']
                     n2 = rev2['business_id']
-                    n1 = rev2['business_id']
                     w = 1
                 elif  diff_votes == 0:
                     n1 = rev1['business_id']
