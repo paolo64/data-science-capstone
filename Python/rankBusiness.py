@@ -43,6 +43,9 @@ class RankBusiness:
         self.infile = infile
         self.G=nx.DiGraph()
         self.info = dict()
+        self.count = 0
+        self.countL1 = 0
+        self.countL2 = 0
         self.errors = 0
 
     def readCvs(self, infile):
@@ -81,15 +84,16 @@ class RankBusiness:
     def getVotes(self, rev):
         return rev['cool']+rev['funny']+rev['useful']
 
-    def calcWeight(self, x):
-        if x > 3:
-            return (x**2 - x - 1)
+    def calcWeight(self, diff, y):
+        if y >= 3:
+            return (diff**2 + diff + 1)
         else:
-            return x
+            return diff
 
     def algo(self,pair):
         rev1 = pair['rev1']
         rev2 = pair['rev2']
+        self.count += 1
 
         #pp(pair)
 
@@ -97,12 +101,14 @@ class RankBusiness:
         if  diff_stars > 0:
             n1 = rev2['business_id']
             n2 = rev1['business_id']
-            w = diff_stars * STAR_DIFF_W
+            w = self.calcWeight(diff_stars,rev1['y']) * STAR_DIFF_W
+            self.countL1 += 1
         elif diff_stars < 0:
             n1 = rev1['business_id']
             n2 = rev2['business_id']
-            w = -diff_stars*STAR_DIFF_W
+            w = self.calcWeight(-diff_stars,rev2['y'])*STAR_DIFF_W
             ret = (rev2['business_id'], rev1['business_id'], -diff_stars)
+            self.countL1 += 1
         elif diff_stars == 0:
             # use sentiment
             diff_sentiment = rev1['y_pred_proba'] - rev2['y_pred_proba']
@@ -110,10 +116,12 @@ class RankBusiness:
                 n1 = rev2['business_id']
                 n2 = rev1['business_id']
                 w = 1
+                self.countL2 += 1
             elif diff_sentiment < 0:
                 n1 = rev1['business_id']
                 n2 = rev2['business_id']
                 w = 1
+                self.countL2 += 1
             elif  diff_sentiment == 0:
                 diff_votes = self.getVotes(rev1) - self.getVotes(rev1)
                 if  diff_votes > 0:
@@ -132,9 +140,8 @@ class RankBusiness:
                     self.errors += 1
 
         # user score
-        w = float(w) * pair['user_score_minmax']
-        #return (n1,n2,float(w))
-        return (n2,n1,float(w)) 
+        w = float(w) * pair['user_score_minmax']/10.0
+        return (n1,n2,float(w)) 
 
     def enrichResult(self,inList):
         ret = list()
@@ -150,7 +157,6 @@ class RankBusiness:
         logger.info("Start")
         start = time.clock()
         # create graph
-        count = 0
 
         self.info  = self.readCvs(INFILE_RESTAURANTS)
 
@@ -164,9 +170,8 @@ class RankBusiness:
                 edge = self.algo(pair)
                 #self.G.add_weighted_edges_from([edge])
                 self.G.add_edge(edge[0], edge[1], weight=edge[2])
-                count += 1
-
-                if count % PRINT_EVERY == 0:
+  
+                if self.count % PRINT_EVERY == 0:
                     logger.info("Working on %d"%i)
 
         end_build_graph = time.clock()
@@ -194,8 +199,10 @@ class RankBusiness:
         data = {'pagerank':sort_prank, 'in_degree_centrality':sort_inDegreeCentrality}
         self.saveFileJson(OUTFILE,data)
         
-        logger.info("count: %d"%(count))
-        logger.info("errors: %d - ratio:%2.2f"%(self.errors, 100.0*float(self.errors)/float(count)))
+        logger.info("count: %d"%(self.count))
+        logger.info("countL1: %d - ratio:%2.2f"%(self.countL1, 100.0*float(self.countL1)/float(self.count)))
+        logger.info("countL2: %d - ratio:%2.2f"%(self.countL2, 100.0*float(self.countL2)/float(self.count)))
+        logger.info("errors: %d - ratio:%2.2f"%(self.errors, 100.0*float(self.errors)/float(self.count)))
  
         # see http://stackoverflow.com/questions/14563440/calculating-eigenvector-centrality-using-networkx
         
