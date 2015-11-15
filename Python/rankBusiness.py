@@ -25,7 +25,7 @@ STAR_DIFF_W = 10
 DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/'
 INFILE = 'pair_reviewsLV.json'
 INFILE_RESTAURANTS = 'restaurantsLV.csv'
-OUTFILE = 'rank_businessLV.json'
+OUTFILE_TMPL = 'out_rank_businessLV-%s.json'
 
 """
 It reads user_score, reviews and reviews_pred_naive_bayesLV.
@@ -77,9 +77,10 @@ class RankBusiness:
     def saveFileJson(self, outJsonFile, data):
         outFile = os.path.join(self.data_dir,outJsonFile)
         fo = open(outFile, 'w')
-        json.dump(data,fo,indent=3)
+        for d in data:
+            fo.write("%s\n"%json.dumps(d))
         fo.close()
-        logger.info("saved outfile:%s"%outFile)
+        logger.info("saved outfile obj-json file:%s"%outFile)
 
     def getVotes(self, rev):
         return rev['cool']+rev['funny']+rev['useful']
@@ -111,7 +112,7 @@ class RankBusiness:
             self.countL1 += 1
         elif diff_stars == 0:
             # use sentiment
-            diff_sentiment = rev1['y_pred_proba'] - rev2['y_pred_proba']
+            diff_sentiment = rev1['y_pred_proba']*rev1['y_pred'] - rev2['y_pred_proba']*rev2['y_pred']
             if  diff_sentiment > 0:          
                 n1 = rev2['business_id']
                 n2 = rev1['business_id']
@@ -145,11 +146,17 @@ class RankBusiness:
 
     def enrichResult(self,inList):
         ret = list()
-        for x in inList:
-            tmp = list(x)
-            info = self.info[x[0]]
-            tmp.append(info)
-            ret.append(tmp)
+        for i,x in enumerate(inList):
+            info = dict(self.info[x[0]])
+            info['score'] = x[1]
+            info['new_rank'] = i
+            info['rank'] = int(info['pos'])
+
+            del info['pos']
+
+            #calc position diff
+            info['diff_rank'] = info['rank']-info['new_rank']
+            ret.append(info)
         return ret
 
     
@@ -185,6 +192,7 @@ class RankBusiness:
         sort_prank = sorted(prank.items(), key=lambda x:x[1], reverse=True)
         sort_prank = self.enrichResult(sort_prank)
         end_pagerank = time.clock()
+        print 
         logger.info("end pagerank in %d secs"%(end_pagerank - start_pagerank))
 
         # in_degree_centrality
@@ -194,10 +202,15 @@ class RankBusiness:
         sort_inDegreeCentrality = sorted(inDegreeCentrality.items(), key=lambda x:x[1], reverse=True)
         sort_inDegreeCentrality = self.enrichResult(sort_inDegreeCentrality)
         end_in_degree_centrality = time.clock()
+        print 
         logger.info("end in_degree_centrality in %d secs"%(end_in_degree_centrality - start_in_degree_centrality))
 
-        data = {'pagerank':sort_prank, 'in_degree_centrality':sort_inDegreeCentrality}
-        self.saveFileJson(OUTFILE,data)
+        #data = {'pagerank':sort_prank, 'in_degree_centrality':sort_inDegreeCentrality}
+        pr_out_file = OUTFILE_TMPL%"PageRank"
+        self.saveFileJson(pr_out_file, sort_prank)
+
+        idc_out_file = OUTFILE_TMPL%"inDegreeCentrality"
+        self.saveFileJson(idc_out_file, sort_inDegreeCentrality)
         
         logger.info("count: %d"%(self.count))
         logger.info("countL1: %d - ratio:%2.2f"%(self.countL1, 100.0*float(self.countL1)/float(self.count)))
@@ -214,4 +227,3 @@ class RankBusiness:
 if __name__ == "__main__":
     rb = RankBusiness()
     rb.main()
-

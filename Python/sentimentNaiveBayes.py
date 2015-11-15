@@ -3,12 +3,18 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_selection import chi2
 #from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import MultinomialNB, BernoulliNB
 import json
 import time
 import numpy as np
 import operator
 from pprint import pprint as pp
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -40,8 +46,16 @@ def vectorize(texts, vocab=[]):
   X = vectorizer.fit_transform(texts)
   return vectorizer.vocabulary_, X
 
+"""def vectorize(texts, vocab=[]):
+  vectorizer = TfidfVectorizer(min_df=1,norm='l2', smooth_idf=True, stop_words="english",sublinear_tf=True,  use_idf=True)
+  if len(vocab) > 0:
+    vectorizer = TfidfVectorizer(min_df=1,norm='l2', smooth_idf=True, stop_words="english",sublinear_tf=True,  use_idf=True, vocabulary=vocab)
+  X = vectorizer.fit_transform(texts)
+  return vectorizer.vocabulary_, X"""
+
+
 def cross_validate(X, y, nfeats):
-  #http://stackoverflow.com/questions/31421413/how-to-compute-precision-recall-accuracy-and-f1-score-for-the-multiclass-case
+  logger.info("Model Validation")
   nrows = X.shape[0]
   kfold = KFold(nrows, 10)
   scores = []
@@ -51,13 +65,11 @@ def cross_validate(X, y, nfeats):
   for train, test in kfold:
     Xtrain, Xtest, ytrain, ytest = X[train], X[test], y[train], y[test]
     clf = MultinomialNB()
+
     clf.fit(Xtrain, ytrain)
+    #score = clf.score(X_test, y_test)
+    #pp(score)
     y_pred = clf.predict(Xtest)
-    y_pred_proba = clf.predict_proba(Xtest)
-    #yw_pred_proba = np.multiply(y_pred,y_pred_proba[:y_pred])
-    #pp(y_pred[:3])
-    #pp(y_pred_proba[:3])
-    #pp(yw_pred_proba[:3])
 
     accuracy = accuracy_score(ytest, y_pred)
     f1 = f1_score(ytest, y_pred, average="macro")
@@ -66,13 +78,14 @@ def cross_validate(X, y, nfeats):
     scores.append((accuracy, f1, precision, recall))
     print "%2.3F\t%2.3f\t%2.3f\t%2.3f"%(accuracy, f1, precision, recall)
     
-  all_means =  "\t".join([str(nfeats), 
-  str(np.mean([x[0] for x in scores])),
-  str(np.mean([x[1] for x in scores])),
-  str(np.mean([x[2] for x in scores])),
-  str(np.mean([x[3] for x in scores])),
-  ])
-  print "mean:%s"%all_means
+
+  mean_accuracy = np.mean([x[0] for x in scores])
+  mean_f1 = np.mean([x[1] for x in scores])
+  mean_precision = np.mean([x[2] for x in scores])
+  print "mean_accuracy:%2.2f"%mean_accuracy
+  print "mean_f1:%2.2f"%mean_f1
+  print "mean_precision:%2.2f"%mean_precision
+
 
 
 def sorted_features(V, X, y, topN):
@@ -82,13 +95,13 @@ def sorted_features(V, X, y, topN):
     for x in sorted(enumerate(chi2_scores), 
     key=operator.itemgetter(1), reverse=True)]
   print "TOP 10 FEATURES FOR"
-  for top_feature in top_features[0:10]:
+  for top_feature in top_features[0:30]:
     print "%7.3f  %s (%d)" % (top_feature[0], top_feature[1], top_feature[2])
   return [x[1] for x in top_features]
 
-def doAll(X, y, ids, out_file):
+def proc(X, y, ids, out_file):
   #http://stackoverflow.com/questions/31421413/how-to-compute-precision-recall-accuracy-and-f1-score-for-the-multiclass-case
-  print "accuracy\tf1\tprecision\trecall"
+  logger.info("Sentiment Analysis")
   ret = dict()
   
   train = X.shape[0]
@@ -147,7 +160,9 @@ def main():
   
   nfeats = 30000
   V, X = vectorize(texts, sorted_feats[0:nfeats])
-  doAll(X, y, ids, out_file)
+  cross_validate(X, y, nfeats)
+
+  proc(X, y, ids, out_file)
   elapsed = (time.clock() - start)      
   logger.info("done in %d secs"%int(elapsed))
 
