@@ -20,8 +20,11 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger("capostone")
 
-INFILE = "/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/reviews_objLV.json"
-OUTFILE = '/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/reviews_sentiment_naive_bayesLV.json'
+#INFILE = "/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/reviews_objLV.json"
+#OUTFILE = '/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/reviews_sentiment_naive_bayesLV.json'
+
+INFILE = "/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/reviews_train_objLV.json"
+OUTFILE = '/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/reviews_train_sentiment_naive_bayesLV.json'
 
 PRINT_EVERY = 10000
 

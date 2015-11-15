@@ -17,9 +17,11 @@ logger = logging.getLogger("capostone")
 PRINT_EVERY = 10000
 
 DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/'
-INFILE_REVIEWS = 'reviews_sentiment_naive_bayesLV.json'
+#INFILE_REVIEWS = 'reviews_sentiment_naive_bayesLV.json'
+INFILE_REVIEWS = 'reviews_train_sentiment_naive_bayesLV.json'
 INFILE_USER_SCORE = 'usersLV_score.json'
-OUTFILE = 'pair_reviewsLV.json'
+#OUTFILE = 'pair_reviewsLV.json'
+OUTFILE = 'pair_reviews_trainLV.json'
 
 """
 It reads user_score, reviews and reviews_pred_naive_bayesLV.

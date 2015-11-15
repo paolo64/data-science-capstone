@@ -16,6 +16,7 @@ logger = logging.getLogger("capostone")
 DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/'
 
 OUTFILE_REST = 'restaurantsLV.csv'
+OUTFILE_REST_TRAIN = 'restaurants_trainLV.csv'
 OUTFILE_REV = 'reviewsLV.json'
 OUTFILE_OBJ_REV = 'reviews_objLV.json'
 OUTFILE_OBJ_REV_TRAIN = 'reviews_train_objLV.json'
@@ -25,7 +26,7 @@ OUTFILE_USR_WITH_MORE_X_FRIENDS = 'users_with_mt%s_friendsLV.txt'
 
 BUSINESS_FILTER = {'categories':set(["Restaurants"])}
 
-MIN_NUM_OF_FRIENDS = 50
+MIN_NUM_OF_FRIENDS = 10
 CUT_PERC_REVIEWS = 70
 
 
@@ -176,8 +177,45 @@ class FilterJsonFiles:
                 #print "NUM FRIENDS:%d"%len(x['friends'])
                 fo.write('%s\n'%(x['user_id']))
         fo.close()
-        logger.info("generated out file: %s"%outFile)    
+        logger.info("generated out file: %s"%outFile) 
 
+
+    def calcRatingBusiness(self,review_train, business):
+        def calcStars(inDict):
+            #  weighted average
+            starsSum = 0
+            tot = 0
+            for k in inDict.keys():
+                starsSum += k*inDict[k]
+                tot += inDict[k]
+            return starsSum / tot    
+
+
+        tmpBusiness = dict()
+        # calc stars 
+        for x in review_train:
+            bid = x['business_id']
+            stars = x['stars']
+
+            if bid not in tmpBusiness:
+                tmpBusiness[bid] = dict()
+            if stars in tmpBusiness[bid]:
+                tmpBusiness[bid][stars] += 1
+            else:
+                tmpBusiness[bid][stars] = 1
+
+               
+        new_business = list()
+        print "LEN-business:",len(business)
+        for x in business:
+            bid = x['business_id']
+            if bid in tmpBusiness:
+                x['stars'] = calcStars(tmpBusiness[bid])
+                new_business.append(x)
+
+        final_business = self.enrichBusiness(new_business)        
+
+        return sorted(final_business, key = lambda x:(x['stars'],x['review_count']), reverse=True)
     
     def loadAllJson(self):   
         count = 0      
@@ -209,12 +247,15 @@ class FilterJsonFiles:
         perc = CUT_PERC_REVIEWS
         cutDay = self.findSplitDay(rev_per_day, perc)
         review_train, review_test = self.splitReviewByDay(review, cutDay)
+
+        # rating
+        rating_business_train = self.calcRatingBusiness(review_train,businessTmp2)
         
         end = time.time()
         logger.info("review: %d x %d"%(self.dim(review)))
         logger.info("[time:%s]"%(end-start))
 
-         # user
+        # user
         curr_file = 'yelp_academic_dataset_user.json'
         logger.info("Loading file:'%s'"%curr_file)
         start = time.time()
@@ -231,6 +272,10 @@ class FilterJsonFiles:
         # save business csv file
         self.saveBusinessCsv(OUTFILE_REST, sorted_business)
         logger.info("saved restaurants file %s"%(OUTFILE_REST))
+
+        # save business train
+        self.saveBusinessCsv(OUTFILE_REST_TRAIN, rating_business_train)
+        logger.info("saved restaurants train file %s"%(OUTFILE_REST_TRAIN))
 
         # save reviewers
         self.saveJson(OUTFILE_REV, review)

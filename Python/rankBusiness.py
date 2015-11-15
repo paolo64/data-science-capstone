@@ -23,9 +23,11 @@ MIN_WEIGHT = 0.001
 STAR_DIFF_W = 10
 
 DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/'
-INFILE = 'pair_reviewsLV.json'
+#INFILE = 'pair_reviewsLV.json'
+INFILE = 'pair_reviews_trainLV.json'
 INFILE_RESTAURANTS = 'restaurantsLV.csv'
-OUTFILE_TMPL = 'out_rank_businessLV-%s.json'
+#OUTFILE_TMPL = 'out_rank_businessLV-%s.json'
+OUTFILE_TMPL = 'out_rank_business_trainLV-%s.json'
 
 """
 It reads user_score, reviews and reviews_pred_naive_bayesLV.
@@ -150,12 +152,12 @@ class RankBusiness:
             info = dict(self.info[x[0]])
             info['score'] = x[1]
             info['new_rank'] = i
-            info['rank'] = int(info['pos'])
+            info['rating_rank'] = int(info['pos'])
 
             del info['pos']
 
             #calc position diff
-            info['diff_rank'] = info['rank']-info['new_rank']
+            info['diff_rank'] = info['rating_rank']-info['new_rank']
             ret.append(info)
         return ret
 
@@ -211,7 +213,7 @@ class RankBusiness:
 
         idc_out_file = OUTFILE_TMPL%"inDegreeCentrality"
         self.saveFileJson(idc_out_file, sort_inDegreeCentrality)
-        
+       
         logger.info("count: %d"%(self.count))
         logger.info("countL1: %d - ratio:%2.2f"%(self.countL1, 100.0*float(self.countL1)/float(self.count)))
         logger.info("countL2: %d - ratio:%2.2f"%(self.countL2, 100.0*float(self.countL2)/float(self.count)))
