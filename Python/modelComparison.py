@@ -10,6 +10,8 @@ from pprint import pprint as pp
 import time
 from staticScoreUser import StaticScoreUser
 import itertools
+import csv
+import ml_metrics as ml
 
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -29,8 +31,9 @@ INFILE_RANK_RATING = 'restaurants_trainLV.csv'
 
 OUTFILE = 'out.json'
 
-TOTAL_USERS = 10
-NUM_SAMPES = 2   
+TOTAL_USERS = 10000
+NUM_SAMPES = 100
+K_MAP = 30  
 
 """
 It reads user_score, reviews and reviews_pred_naive_bayesLV.
@@ -51,7 +54,20 @@ class ModelComparison:
         self.infile_rank_pagerank = infile_rank_pagerank
         self.infile_rank_indegree = infile_rank_indegree
 
-    def loadUserIds(self):
+    def readCvs(self, infile):
+        inFile = os.path.join(self.data_dir,infile)
+        ret = dict()
+        retL = list()
+
+        with open(inFile) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                ret[row['business_id']] = row
+                retL.append(row['business_id'])
+        logger.info("loaded file:%s"%inFile)
+        return ret, retL   
+
+    def loadUserIds(self, static=False):
         inFile = os.path.join(self.data_dir, self.infile_user_ids)      
         ret = list()
         with open(inFile) as f:
@@ -61,6 +77,16 @@ class ModelComparison:
         
         random.shuffle(ret)
         logger.info("loaded file '%s'"%(inFile))
+        """ret = [u'YU0QdsIw-XvELsqxnujFMw',
+                u'xIGQ9_TjQU3nawhizqxmXA',
+                u'pqBcK71JaJGXUHceYtkNpA',
+                u'6yc1WfoPnb1TIK1a1RavMw',
+                u'zB80pJq2F7x0ZpmrDIE7TA',
+                u'hzIUraWIydhiEoPBBryP7w',
+                u'VIUqdgqoqnii4OKs5-01mA',
+                u'jfQi2X4dyAHaxf63irqQGw',
+                u'-Eg2U9-Vf1TjwEy_eqmnEA',
+                u'Pn1H5qHdisZMzsBbMR6KGA']"""
         return set(ret[:TOTAL_USERS])  
 
 
@@ -121,17 +147,24 @@ class ModelComparison:
         retS = set()
         usersS = set()
         # get users ahd thier friends
+        #print "SAMPLE:"
+        #pp(sample)
         for user in sample:
             usersS.add(user)
             for fr in users_friends[user]:
                 usersS.add(fr)
 
         # get business
+        error = 0
         for u in usersS:
             if u in users_business:
                 for b in users_business[u]:
                     retS.add(b)
+            else:
+                error +=1 
+                #logger.error(u)    
 
+        logger.info("num users_no_business:%d"%error)
         return retS                
 
 
@@ -154,24 +187,45 @@ class ModelComparison:
         rank_pagerank = self.loadObjJson(self.infile_rank_pagerank)
         predicted_pagerank = [x['business_id'] for x in rank_pagerank]
 
+        # rating
+        business_rating_dict, predicted_rating  = self.readCvs(INFILE_RANK_RATING)
 
-         # rank business indegree
+        # rank business indegree
         rank_indegree = self.loadObjJson(self.infile_rank_indegree)
         predicted_indegree = [x['business_id'] for x in rank_indegree]
 
         all_users = users_friends.keys()
-        print "ALL"
         pp(all_users)
         samples = np.split(np.array(range(TOTAL_USERS)), NUM_SAMPES)
-        for chunk in samples:
-            sample = [all_users[i] for i in chunk]
-            pp(sample)
+        maps = {'pagerank':[],'indegree':[],'rating':[]}
+        for i,chunk in enumerate(samples):
+            logger.info("sample: %d"%i)
+            sample = [all_users[x] for x in chunk]
             actual = self.getBusinessFromUsers(sample, users_friends, users_business)
-            print "ACTUAL"
-            pp(actual)
             logger.info("len of actual:%d"%len(actual))
 
+            map_pagerank = ml.mapk([actual], [predicted_pagerank], k=K_MAP)
+            logger.info("map_pagerank[%d]:%6.6f"%(i,map_pagerank))
+            maps['pagerank'].append(map_pagerank)
+            
+            map_indegree = ml.mapk([actual], [predicted_indegree], k=K_MAP)
+            logger.info("map_indegree[%d]:%6.6f"%(i,map_indegree))
+            maps['indegree'].append(map_indegree)
+
+            map_rating = ml.mapk([actual], [predicted_rating], k=K_MAP)
+            logger.info("map_rating[%d]:%6.6f"%(i,map_rating))
+            maps['rating'].append(map_rating)
+
         
+        pp(maps)
+
+        maps_stats = {'pagerank':{},'indegree':{},'rating':{}}
+        for x in maps.keys():
+            maps_stats[x]['mean'] = np.mean(maps[x])
+            maps_stats[x]['std'] = np.std(maps[x])
+
+        pp(maps_stats)
+
         elapsed = (time.clock() - start)
         logger.info("done in %d secs"%int(elapsed))
 
