@@ -29,11 +29,11 @@ INFILE_RANK_BUSINESS_PAGERANK = 'out_rank_business_trainLV-PageRank.json'
 INFILE_RANK_BUSINESS_INDEGREE = 'out_rank_business_trainLV-inDegreeCentrality.json'
 INFILE_RANK_RATING = 'restaurants_trainLV.csv'
 
-OUTFILE = 'out.json'
+OUTFILE = 'out.csv'
 
 TOTAL_USERS = 10000
 NUM_SAMPES = 100
-K_MAP = 30  
+K_MAP = 30 
 
 """
 It reads user_score, reviews and reviews_pred_naive_bayesLV.
@@ -133,14 +133,23 @@ class ModelComparison:
         logger.info("loaded file '%s'"%(inFile))   
         return retL
 
+   
     def saveJson(self, outJsonFile, data):
         outFile = os.path.join(self.data_dir,outJsonFile)
         fo = open(outFile, 'w')
-        for x in data:
-            fo.write("%s\n"%json.dumps(x))
+        json.dump(data,fo,indent=3)
         fo.close()
-        logger.info("out file:%s"%outFile)
-   
+        logger.info("generated out file: %s"%outFile)
+
+
+    def saveCsv(self, outJsonFile, data):
+        outFile = os.path.join(self.data_dir,outJsonFile)
+        fo = open(outFile, 'w')
+        fo.write('%s\n'%(",".join(data.keys())))
+        for i in range(0,len(data['indegree'])):
+            fo.write('%s,%s,%s\n'%(data['indegree'][i],data['pagerank'][i],data['rating'][i]))
+        fo.close()
+        logger.info("generated out file: %s"%outFile)
           
 
     def getBusinessFromUsers(self, sample, users_friends, users_business):
@@ -167,7 +176,7 @@ class ModelComparison:
         logger.info("num users_no_business:%d"%error)
         return retS                
 
-
+    
     def main(self):
         logger.info("Start")
         start = time.clock()
@@ -195,7 +204,7 @@ class ModelComparison:
         predicted_indegree = [x['business_id'] for x in rank_indegree]
 
         all_users = users_friends.keys()
-        pp(all_users)
+        #pp(all_users)
         samples = np.split(np.array(range(TOTAL_USERS)), NUM_SAMPES)
         maps = {'pagerank':[],'indegree':[],'rating':[]}
         for i,chunk in enumerate(samples):
@@ -204,15 +213,15 @@ class ModelComparison:
             actual = self.getBusinessFromUsers(sample, users_friends, users_business)
             logger.info("len of actual:%d"%len(actual))
 
-            map_pagerank = ml.mapk([actual], [predicted_pagerank], k=K_MAP)
+            map_pagerank = ml.apk(actual, predicted_pagerank, k=K_MAP)
             logger.info("map_pagerank[%d]:%6.6f"%(i,map_pagerank))
             maps['pagerank'].append(map_pagerank)
             
-            map_indegree = ml.mapk([actual], [predicted_indegree], k=K_MAP)
+            map_indegree = ml.apk(actual, predicted_indegree, k=K_MAP)
             logger.info("map_indegree[%d]:%6.6f"%(i,map_indegree))
             maps['indegree'].append(map_indegree)
 
-            map_rating = ml.mapk([actual], [predicted_rating], k=K_MAP)
+            map_rating = ml.apk(actual, predicted_rating, k=K_MAP)
             logger.info("map_rating[%d]:%6.6f"%(i,map_rating))
             maps['rating'].append(map_rating)
 
@@ -225,6 +234,8 @@ class ModelComparison:
             maps_stats[x]['std'] = np.std(maps[x])
 
         pp(maps_stats)
+
+        self.saveCsv(OUTFILE,maps)
 
         elapsed = (time.clock() - start)
         logger.info("done in %d secs"%int(elapsed))
