@@ -178,7 +178,13 @@ class RankBusiness:
                 #pp(pair)
                 edge = self.algo(pair)
                 #self.G.add_weighted_edges_from([edge])
-                self.G.add_edge(edge[0], edge[1], weight=edge[2])
+                L = edge[0]
+                R = edge[1]
+                W = edge[2]
+                if self.G.has_edge(L, R):
+                    self.G[L][R]['weight'] += W
+                else:
+                    self.G.add_edge(L, R, weight=W)
   
                 if self.count % PRINT_EVERY == 0:
                     logger.info("Working on %d"%i)
