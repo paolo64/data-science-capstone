@@ -49,6 +49,7 @@ class RankBusiness:
         self.countL1 = 0
         self.countL2 = 0
         self.errors = 0
+        self.same_edge = 0
 
     def readCvs(self, infile):
         inFile = os.path.join(self.data_dir,infile)
@@ -183,6 +184,7 @@ class RankBusiness:
                 W = edge[2]
                 if self.G.has_edge(L, R):
                     self.G[L][R]['weight'] += W
+                    self.same_edge += 1
                 else:
                     self.G.add_edge(L, R, weight=W)
   
@@ -210,7 +212,6 @@ class RankBusiness:
         sort_inDegreeCentrality = sorted(inDegreeCentrality.items(), key=lambda x:x[1], reverse=True)
         sort_inDegreeCentrality = self.enrichResult(sort_inDegreeCentrality)
         end_in_degree_centrality = time.clock()
-        print 
         logger.info("end in_degree_centrality in %d secs"%(end_in_degree_centrality - start_in_degree_centrality))
 
         #data = {'pagerank':sort_prank, 'in_degree_centrality':sort_inDegreeCentrality}
@@ -223,7 +224,9 @@ class RankBusiness:
         logger.info("count: %d"%(self.count))
         logger.info("countL1: %d - ratio:%2.2f"%(self.countL1, 100.0*float(self.countL1)/float(self.count)))
         logger.info("countL2: %d - ratio:%2.2f"%(self.countL2, 100.0*float(self.countL2)/float(self.count)))
+        logger.info("same_edge:%d"%(self.same_edge))
         logger.info("errors: %d - ratio:%2.2f"%(self.errors, 100.0*float(self.errors)/float(self.count)))
+
  
         # see http://stackoverflow.com/questions/14563440/calculating-eigenvector-centrality-using-networkx
         

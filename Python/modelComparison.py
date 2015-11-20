@@ -29,7 +29,8 @@ INFILE_RANK_BUSINESS_PAGERANK = 'out_rank_business_trainLV-PageRank.json'
 INFILE_RANK_BUSINESS_INDEGREE = 'out_rank_business_trainLV-inDegreeCentrality.json'
 INFILE_RANK_RATING = 'restaurants_trainLV.csv'
 
-OUTFILE = 'out.csv'
+OUTFILE_RANK = 'out_final_rank.csv'
+OUTFILE_WINNER = 'out_final_winner.csv'
 
 TOTAL_USERS = 10000
 NUM_SAMPES = 100
@@ -149,8 +150,18 @@ class ModelComparison:
         for i in range(0,len(data['indegree'])):
             fo.write('%s,%s,%s\n'%(data['indegree'][i],data['pagerank'][i],data['rating'][i]))
         fo.close()
-        logger.info("generated out file: %s"%outFile)
-          
+        logger.info("generated out final file: %s"%outFile)
+
+    def saveWinnerCsv(self, outfile, inList):
+        #  {'winIndegreeCount': 744, 'winPagerankCount': 608, 'winRatingCount': 0},
+        # {'winIndegreeCount': 606, 'winPagerankCount': 475, 'winRatingCount': 0},
+        outFile = os.path.join(self.data_dir,outfile)
+        fo = open(outFile, 'w')
+        fo.write('winners_indegree,winners_pagerank,winners_rating\n')
+        for x in inList:
+            fo.write('%s,%s,%s\n'%(x['winIndegreeCount'], x['winPagerankCount'], x['winRatingCount']))
+        fo.close()
+        logger.info("generated out final file: %s"%outFile)          
 
     def getBusinessFromUsers(self, sample, users_friends, users_business):
         retS = set()
@@ -177,6 +188,40 @@ class ModelComparison:
         return retS                
 
     
+    def createDictForWinners(self,inList):
+        retD = dict()
+        for x in inList:
+            bid = x['business_id']
+            retD[bid] = x
+
+        return retD 
+
+    def winnersCountWinners(self,actual, rankRatingDict,rankPagerankDict,rankIndegreeDict):
+        winRatingCount = 0
+        winPagerankCount = 0 
+        winIndegreeCount = 0
+
+        countD = {
+            'winRatingCount':0,
+            'winPagerankCount':0,
+            'winIndegreeCount':0,
+            }
+
+        ind = {
+            0: 'winRatingCount',
+            1: 'winPagerankCount',
+            2: 'winIndegreeCount'  
+        }
+
+        for bid in actual:
+            if (bid in rankRatingDict) and (bid in rankPagerankDict) and (bid in rankIndegreeDict): 
+                tmp = [rankRatingDict[bid]['pos'], rankPagerankDict[bid]['new_rank'], rankIndegreeDict[bid]['new_rank'] ]
+                i = tmp.index(min(tmp))
+                k = ind[i]
+                countD[k] += 1
+
+        return countD
+
     def main(self):
         logger.info("Start")
         start = time.clock()
@@ -192,21 +237,24 @@ class ModelComparison:
         users_business = self.loadUsersBusiness(users_friends_set)
         logger.info("len of users_business:%d"%len(users_business))
 
+        # rating
+        rankRatingDict, predicted_rating  = self.readCvs(INFILE_RANK_RATING)
+
         # rank business pagerank
         rank_pagerank = self.loadObjJson(self.infile_rank_pagerank)
         predicted_pagerank = [x['business_id'] for x in rank_pagerank]
-
-        # rating
-        business_rating_dict, predicted_rating  = self.readCvs(INFILE_RANK_RATING)
+        rankPagerankDict = self.createDictForWinners(rank_pagerank)
 
         # rank business indegree
         rank_indegree = self.loadObjJson(self.infile_rank_indegree)
         predicted_indegree = [x['business_id'] for x in rank_indegree]
+        rankIndegreeDict = self.createDictForWinners(rank_indegree)
 
         all_users = users_friends.keys()
         #pp(all_users)
         samples = np.split(np.array(range(TOTAL_USERS)), NUM_SAMPES)
         maps = {'pagerank':[],'indegree':[],'rating':[]}
+        winnersAllCountList = list()
         for i,chunk in enumerate(samples):
             logger.info("sample: %d"%i)
             sample = [all_users[x] for x in chunk]
@@ -225,8 +273,11 @@ class ModelComparison:
             logger.info("map_rating[%d]:%6.6f"%(i,map_rating))
             maps['rating'].append(map_rating)
 
+            winnersCountDict = self.winnersCountWinners(actual, rankRatingDict,rankPagerankDict,rankIndegreeDict)
+            winnersAllCountList.append(winnersCountDict)
+
         
-        pp(maps)
+        #pp(maps)
 
         maps_stats = {'pagerank':{},'indegree':{},'rating':{}}
         for x in maps.keys():
@@ -235,7 +286,12 @@ class ModelComparison:
 
         pp(maps_stats)
 
-        self.saveCsv(OUTFILE,maps)
+        # out final rank
+        self.saveCsv(OUTFILE_RANK,maps)
+
+        # out final winners
+        self.saveWinnerCsv(OUTFILE_WINNER, winnersAllCountList)
+
 
         elapsed = (time.clock() - start)
         logger.info("done in %d secs"%int(elapsed))
