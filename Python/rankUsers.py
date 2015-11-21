@@ -18,6 +18,7 @@ DATA_DIR='/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset
 
 INFILE_USR = 'usersLV.json'
 OUTFILE_USR = 'usersLV_score.json'
+OUTFILE_USR_CSV = 'usersLV_matrix.csv'
 
 
 class RankUsers:
@@ -44,20 +45,31 @@ class RankUsers:
             fo.write("%s\n"%json.dumps(x))
         fo.close()
         logger.info("out file:%s"%outFile)
+
+    def saveCsv(self, outfile, data):
+        outFile = os.path.join(self.data_dir,outfile)
+        fo = open(outFile, 'w')
+        fo.write("review_count_per_year,review_count,num_fans,num_friends,votes_useful,elite_years_perc\n")
+        for x in data:
+            fo.write("%s,%s,%s,%s,%s,%s\n"%(x['review_count_per_year'],x['review_count'],x['num_fans'],x['num_friends'],x['votes_useful'],x['elite_years_perc']))
+        fo.close()
+        logger.info("out file:%s"%outFile)    
     
     def calcStaticRank(self):
         count = 0
         ret = list()
+        retFull = list()
         for u in self.data:
             ssu = StaticScoreUser(u)
             score_dict = ssu.score()
+            retFull.append(score_dict)
             if not score_dict:
                 print "ERRORE"
             else:
                 u['score'] = score_dict['score']
                 ret.append(u)
 
-        return ret
+        return ret, retFull
 
     def score_normalizer(self,data_in):
         logger.info("starting normalization")
@@ -89,7 +101,7 @@ class RankUsers:
         self.loadJson()
 
         # calc static rank per user
-        data_out = self.calcStaticRank()
+        data_out, data_out_full = self.calcStaticRank()
 
         # normalize: scale and minmax
         data_out_normalized = self.score_normalizer(data_out)
@@ -97,6 +109,9 @@ class RankUsers:
         # save json
         self.saveJson(OUTFILE_USR, data_out_normalized)
         
+        # save csv for R
+        self.saveCsv(OUTFILE_USR_CSV,data_out_full)
+
         elapsed = (time.clock() - start)
         
         print "done in %d secs"%int(elapsed)
