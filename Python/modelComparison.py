@@ -157,9 +157,9 @@ class ModelComparison:
         # {'winIndegreeCount': 606, 'winPagerankCount': 475, 'winRatingCount': 0},
         outFile = os.path.join(self.data_dir,outfile)
         fo = open(outFile, 'w')
-        fo.write('winners_indegree,winners_pagerank,winners_rating\n')
+        fo.write('indegree,pagerank,rating\n')
         for x in inList:
-            fo.write('%s,%s,%s\n'%(x['winIndegreeCount'], x['winPagerankCount'], x['winRatingCount']))
+            fo.write('%s,%s,%s\n'%(x['indegree'], x['pagerank'], x['rating']))
         fo.close()
         logger.info("generated out final file: %s"%outFile)          
 
@@ -197,28 +197,26 @@ class ModelComparison:
         return retD 
 
     def winnersCountWinners(self,actual, rankRatingDict,rankPagerankDict,rankIndegreeDict):
-        winRatingCount = 0
-        winPagerankCount = 0 
-        winIndegreeCount = 0
-
         countD = {
-            'winRatingCount':0,
-            'winPagerankCount':0,
-            'winIndegreeCount':0,
+            'rating':0,
+            'pagerank':0,
+            'indegree':0,
             }
 
         ind = {
-            0: 'winRatingCount',
-            1: 'winPagerankCount',
-            2: 'winIndegreeCount'  
+            0: 'rating',
+            1: 'pagerank',
+            2: 'indegree'  
         }
 
         for bid in actual:
             if (bid in rankRatingDict) and (bid in rankPagerankDict) and (bid in rankIndegreeDict): 
-                tmp = [rankRatingDict[bid]['pos'], rankPagerankDict[bid]['new_rank'], rankIndegreeDict[bid]['new_rank'] ]
+                tmp = [int(rankRatingDict[bid]['pos']), int(rankPagerankDict[bid]['new_rank']), int(rankIndegreeDict[bid]['new_rank']) ]
                 i = tmp.index(min(tmp))
                 k = ind[i]
                 countD[k] += 1
+                print "PAOLO:",rankRatingDict[bid]['pos'], rankPagerankDict[bid]['new_rank'], rankIndegreeDict[bid]['new_rank'], "--- i:",i, " k:",k
+
 
         return countD
 
@@ -283,8 +281,14 @@ class ModelComparison:
         for x in maps.keys():
             maps_stats[x]['mean'] = np.mean(maps[x])
             maps_stats[x]['std'] = np.std(maps[x])
-
         pp(maps_stats)
+
+        win_stats = {'pagerank':{},'indegree':{},'rating':{}}
+        for x in winnersCountDict.keys():
+            win_stats[x]['mean'] = np.mean(winnersCountDict[x])
+            win_stats[x]['std'] = np.std(winnersCountDict[x])
+        pp(win_stats)
+    
 
         # out final rank
         self.saveCsv(OUTFILE_RANK,maps)
