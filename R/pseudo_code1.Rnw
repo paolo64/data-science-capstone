@@ -1,0 +1,64 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{pifont}
+
+
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
+\algnewcommand{\LineComment}[1]{\State \(\triangleright\) #1}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\begin{algorithm}
+\caption{Pseudo-code - Social Business Graph Building}\label{euclid}
+\begin{algorithmic}[1]
+\Procedure{BuildGraph}{}
+\State $\textit{G} \gets \text{intialize a weighted directed graph}$
+
+
+\ForEach{$u  \in \mathcal Users $}
+
+\State $reviews\_list \gets  \textit{get user's reviews list}$
+\State $2combo\_reviews\_list \gets \textit{From reviews obtain 2combinations list}$
+  \ForEach{$pair  \in 2combo\_reviews\_list $}
+    \State ${starsB_1, starsB_2}  \gets  \textit{from the current pair it gets the stars of two business}$ 
+    
+    \If {$\left|{starsB_1 - starsB_2}\right| > 0$}
+      \LineComment{there is a winner, the user likes more one of the two business}
+      
+        \State $G \gets {starsB_1, starsB_2, W}$
+        \LineComment{insert into graph G two nodes B1 and B2 and the directed}
+        \LineComment{edge connecting them with weight W}
+        \LineComment{W is based on|starsB1 - starsB2| and user authority}
+
+    \Else
+        \If {$\left|{starsB_1 - starsB_2}\right| = 0$}
+            \LineComment{there is no a winner, the number of stars are the same} 
+            \LineComment{I need to calculate the sentiment analysis}
+            \LineComment{of the text in the two reviews}
+            
+            \State $S_1 = estimatedStars_1 * estimatedProbability_1$
+            \State $S_2 = estimatedStars_2 * estimatedProbability_2$
+            \LineComment{the estimated values come from}
+            \LineComment{sentiment classifier for review 1,2}
+            \If {$\left|{S_1 - S_2}\right| > 0$}
+              \LineComment{there is a winner}
+              \State $G \gets {starsB_1, starsB_2, W}$
+              \LineComment{insert into graph G two nodes B1 and B2, weight W}
+              \LineComment{W is based on |S1 - S2| and user authority}
+            \EndIf
+        \EndIf
+    \EndIf
+  \EndFor
+
+\EndFor
+\LineComment{if the two nodes B1, B2 already exists into the graph G the weight W is updated with the new one.}
+
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}

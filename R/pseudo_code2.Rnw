@@ -1,0 +1,54 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{pifont}
+
+
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
+\algnewcommand{\LineComment}[1]{\State \(\triangleright\) #1}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\setcounter{algorithm}{1}
+\begin{algorithm}
+\caption{Pseudo-code - Testing Setup}\label{euclid}
+\begin{algorithmic}[1]
+\Procedure{BuildGraph}{}
+\State $random\_10k\_users \gets \text{initialize a list of 10k users from the dataset in a random way}$
+
+
+\ForEach{$sample100  \in random\_10k\_users $}
+  \LineComment{sample of 100 users from random\_10k\_users list}
+  
+  \ForEach{$user  \in sample100 $}
+  \LineComment{Get the business reviewed by he/she and by his/her friends}
+  \LineComment{from the test review datase, after cut-day 2014-01-22}
+  \LineComment{and remove duplicates from set sample\_test\_business}
+  \State $\textit{sample\_test\_business} \gets \text{add to set the business reviewed by current user (+friends)}$
+  
+  \EndFor
+  \LineComment{---------------------------------------------------}
+  \LineComment{Calulate Mean Average Precision for set sample\_test\_business}
+  \LineComment{versus the three reference lists}
+   \State \Call{CalcMAP}{$pagerank\_list, sample\_test\_business$}
+   \State \Call{CalcMAP}{$indegree\_list, sample\_test\_business$}
+   \State \Call{CalcMAP}{$simple\_rating\_list,  sample\_test\_business$}
+   \LineComment{--------------------------------------------------}
+   \LineComment{Calulate Wins based on positions for the three reference lists}
+   \State \Call{CalcCountWINS}{$sample\_test\_business,pagerank\_list, indegree\_list, simple\_rating\_list$}
+
+
+
+
+
+\EndFor
+
+
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}

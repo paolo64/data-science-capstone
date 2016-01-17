@@ -1,0 +1,88 @@
+Social graph based algorithms to improve business ranking, compared with simple rating-based ranking
+========================================================
+author: 
+date: November 2015
+
+Introduction
+========================================================
+
+The goal of analysis is to explore alternative business ranking approaches to traditional sorting based on rating, a basic stars and number of rewiews ranking. 
+
+The dataset examined is from [Yelp Dataset Challenge](http://www.yelp.com/dataset_challenge).
+
+The primary question the analysis aims to answer was:
+
+**"Can we define a more expressive rank of businesses (e.g. restaurants in Las Vegas) based on social network, different from simple stars based ranking?"**
+
+The ultimate goal is to try to improve business recommendation systems for Yelp users, providing them a better and more relevant ranking.
+
+Model and Data
+========================================================
+
+- A subset of Yelp data considered: **Restaurants in Las Vegas, NV**.
+- Object data involved: **users**, **reviews** and **business**
+- The **graph** is the heart of the model. The **nodes** of graph are *business* and the **edges** represent the *user preferences*.
+- The model assigns a **authority score** to each user
+- The model uses **sentiment analysis** of text inside each review
+- The model is based on **user preferences** between pairs of business 
+
+ ## All the elements above are used to build the **business social graph**.
+
+Algorithms
+========================================================
+Once the social graph has been built we can run some algorithms on it to try different rankings
+### Two graph algorithms:
+- **Pagerank**: the importance of a node is determined mainly by its backlinks
+- **In-degree Centrality**: indicators of centrality identify the most important vertices within a graph
+
+Their output are **two ordered lists of business** ranked according to the algorithm adopted.
+
+Essentially the task of comparing the three models is to find the list, among the three, with the “best” ranking.
+
+
+Results
+========================================================
+Metrics
+- Mean Average Precision (MAP)
+- Count of wins
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(gridExtra)
+library(reshape2)
+#p1
+df <- read.csv("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/out_final_rank.csv")
+df$X <- seq(1: nrow(df))
+dfm <- melt(df, id.vars=c("X"))
+colnames(dfm) <- c("Samples", "Algo", "MAP")
+p1.leg <- ggplot(dfm, aes(x=Samples, y=MAP, colour=Algo)) + geom_line()+ ggtitle("Mean Average Precision") + ylab("Mean Average Precision")
+p1 <- ggplot(dfm, aes(x=Samples, y=MAP, colour=Algo)) + geom_line()+ ggtitle("Mean Average Precision") + ylab("Mean Average Precision") + theme(legend.position="none")
+
+# p2
+dfw <- read.csv("/data/DataScience_JohnsHopkins/yelp_dataset_challenge_academic_dataset/out_final_winner.csv")
+dfw$X <- seq(1: nrow(dfw))
+dfm2 <- melt(dfw, id.vars=c("X"))
+colnames(dfm2) <- c("Samples", "Algo", "Count")
+p2 <- ggplot(dfm2, aes(x=Samples, y=Count, fill=factor(Algo), colour=Algo)) + geom_bar(stat="identity")+ facet_grid(. ~ Algo)+ scale_x_continuous(breaks=c(1,50,100)) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Count Wins") + ylab("Count Wins") + theme(legend.position="none")
+
+#grid
+g_legend <- function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)}
+
+leg<-g_legend(p1.leg)
+grid.arrange(arrangeGrob(p1,p2,leg,ncol=3,widths=c(3/7,3/7,1/7)))
+```
+
+Discussion
+========================================================
+**Yes, it is possible to answer the primary question**. We can have valid business rankings alternative to simple rating sorting ranking.
+
+- According to MAP metric **Pagerank** obtains the best performance. The second is In-Degree and the third is the simple rating.
+- The second plot shows **In-degree** provides more wins than others.
+- The main idea behind this approach is based on "*Homophily*". According to the principle of "*Homophily*" people are friends with people like them. User’s context heavily influences their behavior.
+
+**Social graph based algorithms are able to bring out the strength of the nodes, taking into account the weighted relationships among them.** 
+
